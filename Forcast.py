@@ -46,10 +46,10 @@ class WeatherPresenter:
         """Returns the 7-day outlook as a formatted string."""
         if not self._ensure_data_loaded():
             return "Error: Could not retrieve data."
-
+        location = self.reader.get_location()
         days = self.reader.get_forecast_days()
 
-        lines = ["--- WEEK'S FORECAST ---"]
+        lines = ["--- WEEK'S FORECAST: {location} ---"]
         for day in days[1:8]:
             date = day.get('datetime')
             high = day.get('tempmax')
