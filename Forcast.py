@@ -10,7 +10,7 @@ class WeatherPresenter:
         self.reader = None
 
     def _ensure_data_loaded(self):
-        """Internal helper to ensure we have data before displaying."""
+        """Internal helper to ensure we have data before processing."""
         if self.reader is None:
             try:
                 url = WeatherReader.build_url(self.config_path, self.system, self.city)
@@ -19,14 +19,14 @@ class WeatherPresenter:
                 self.reader = WeatherReader(response.json())
                 return True
             except Exception as e:
-                print(f"Error: Could not retrieve weather data. {e}")
+                # We return a string error message if it fails
                 return False
         return True
 
-    def todays_forecast(self):
-        """Displays current weather details."""
+    def get_today(self) -> str:
+        """Returns today's weather as a formatted string."""
         if not self._ensure_data_loaded():
-            return
+            return "Error: Could not retrieve data."
 
         location = self.reader.get_location()
         current = self.reader.get_current_conditions()
@@ -34,23 +34,30 @@ class WeatherPresenter:
         temp = current.get('temp', 'N/A')
         cond = current.get('conditions', 'Unknown')
 
-        print(f"\n--- TODAY'S FORECAST: {location} ---")
-        print(f"Conditions: {cond}")
-        print(f"Temperature: {temp}{self.unit}")
-        print("-" * 40)
+        lines = [
+            f"--- TODAY'S FORECAST: {location} ---",
+            f"Conditions: {cond}",
+            f"Temperature: {temp}{self.unit}",
+            "-" * 40
+        ]
+        return "\n".join(lines)
 
-    def weeks_forecast(self):
-        """Displays the 7-day outlook."""
+    def get_week(self) -> str:
+        """Returns the 7-day outlook as a formatted string."""
         if not self._ensure_data_loaded():
-            return
-        location = self.reader.get_location()
+            return "Error: Could not retrieve data."
+
         days = self.reader.get_forecast_days()
 
-        print(f"--- WEEK'S FORECAST: {location} ---")
+        lines = ["--- WEEK'S FORECAST ---"]
         for day in days[1:8]:
             date = day.get('datetime')
             high = day.get('tempmax')
             low = day.get('tempmin')
             cond = day.get('conditions')
-            print(f"{date}: {cond:20} | High: {high}{self.unit} / Low: {low}{self.unit}")
-        print("-" * 40)
+            lines.append(f"{date}: {cond:20} | High: {high}{self.unit} / Low: {low}{self.unit}")
+
+        lines.append("-" * 40)
+        return "\n".join(lines)
+
+
