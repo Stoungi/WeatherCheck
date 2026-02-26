@@ -1,33 +1,56 @@
+import requests
+from API_Reader import WeatherReader
+
 class WeatherPresenter:
-    """Utilizes the WeatherReader to display formatted weather information."""
+    def __init__(self, city, system, config_path="config.json"):
+        self.city = city
+        self.system = system
+        self.config_path = config_path
+        self.unit = "°C" if system == "metric" else "°F"
+        self.reader = None
 
-    def __init__(self, reader: WeatherReader, system: str):
-        self.reader = reader
-        self.system = system  # This will be "metric" or "us" from main.py
+    def _ensure_data_loaded(self):
+        """Internal helper to ensure we have data before displaying."""
+        if self.reader is None:
+            try:
+                url = WeatherReader.build_url(self.config_path, self.system, self.city)
+                response = requests.get(url)
+                response.raise_for_status()
+                self.reader = WeatherReader(response.json())
+                return True
+            except Exception as e:
+                print(f"Error: Could not retrieve weather data. {e}")
+                return False
+        return True
 
-    def display_current_summary(self):
+    def todays_forecast(self):
+        """Displays current weather details."""
+        if not self._ensure_data_loaded():
+            return
+
         location = self.reader.get_location()
         current = self.reader.get_current_conditions()
 
         temp = current.get('temp', 'N/A')
-        conditions = current.get('conditions', 'Unknown')
+        cond = current.get('conditions', 'Unknown')
 
-        # Simple switch based on the input from main
-        unit = "°C" if self.system == "metric" else "°F"
+        print(f"\n--- TODAY'S FORECAST: {location} ---")
+        print(f"Conditions: {cond}")
+        print(f"Temperature: {temp}{self.unit}")
+        print("-" * 40)
 
-        print(f"--- Weather for {location} ---")
-        print(f"Current Status: {conditions}")
-        print(f"Temperature: {temp}{unit}")
-        print("-" * 30)
-
-    def display_weekly_forecast(self):
+    def weeks_forecast(self):
+        """Displays the 7-day outlook."""
+        if not self._ensure_data_loaded():
+            return
+        location = self.reader.get_location()
         days = self.reader.get_forecast_days()
-        unit = "°C" if self.system == "metric" else "°F"
 
-        print("Upcoming Forecast:")
-        for day in days[:7]:
+        print(f"--- WEEK'S FORECAST: {location} ---")
+        for day in days[1:8]:
             date = day.get('datetime')
             high = day.get('tempmax')
             low = day.get('tempmin')
             cond = day.get('conditions')
-            print(f"{date}: {cond} | High: {high}{unit} / Low: {low}{unit}")
+            print(f"{date}: {cond:20} | High: {high}{self.unit} / Low: {low}{self.unit}")
+        print("-" * 40)
