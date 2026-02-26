@@ -40,7 +40,9 @@ try:
 
     # Process with your classes
     reader = WeatherReader(response.json())
-    presenter = WeatherPresenter(reader)
+
+    # Pass target_system (from the top of main.py) into the presenter here
+    presenter = WeatherPresenter(reader, target_system)
 
     presenter.display_current_summary()
     presenter.display_weekly_forecast()
