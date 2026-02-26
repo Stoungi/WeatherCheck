@@ -49,7 +49,7 @@ class WeatherPresenter:
         location = self.reader.get_location()
         days = self.reader.get_forecast_days()
 
-        lines = ["--- WEEK'S FORECAST: {location} ---"]
+        lines = [f"--- WEEK'S FORECAST: {location} ---"]
         for day in days[1:8]:
             date = day.get('datetime')
             high = day.get('tempmax')
