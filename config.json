@@ -1,0 +1,7 @@
+{
+    "api_key": "YOUR_KEY_FROM_VISUAL_CROSSING",
+    "urls": {
+        "metric": "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{location}%2C%20I%2C%20GR?unitGroup=metric&include=days,current&key={key}&contentType=json",
+        "us": "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{location}%2C%20I%2C%20GR?unitGroup=us&include=days,current&key={key}&contentType=json"
+    }
+}
