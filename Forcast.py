@@ -30,7 +30,43 @@ class WeatherPresenter:
         if 0.5 < phase <= 0.75: return "Waning Gibbous"
         return "Waning Crescent"
 
+    def _format_today(self, location, hour_count=None) -> str:
+        """Helper to format the current hour and astronomy data."""
+        current = self.reader.get_current_conditions()
+        astro = self.reader.get_astronomy_today()
+
+        lines = [
+            f"--- TODAY'S WEATHER: {location} ---",
+            f"Current Time: {current.get('datetime')}",
+            f"Conditions: {current.get('conditions')}",
+            f"Temperature: {current.get('temp')}{self.unit}",
+            f"Sunrise: {astro.get('sunrise')} | Sunset: {astro.get('sunset')}",
+            f"Moon Phase: {self._interpret_moon(astro.get('moonphase'))}"
+        ]
+
+        if hour_count:
+            lines.append(f"\n--- NEXT {hour_count} HOURS ---")
+            hourly_data = self.reader.get_hourly_forecast()
+            current_hour_str = current.get('datetime', '00:00:00')[:2]
+            start_idx = int(current_hour_str)
+
+            for h in hourly_data[start_idx + 1 : start_idx + 1 + int(hour_count)]:
+                lines.append(f"{h.get('datetime')[:5]}: {h.get('temp')}{self.unit} - {h.get('conditions')}")
+
+        lines.append("-" * 40)
+        return "\n".join(lines)
+
+    def _format_week(self, location) -> str:
+        """Helper to format the 7-day outlook."""
+        days = self.reader.get_forecast_days()
+        lines = [f"--- WEEK'S FORECAST: {location} ---"]
+        for day in days[1:8]:
+            lines.append(f"{day.get('datetime')}: {day.get('conditions'):20} | High: {day.get('tempmax')}{self.unit} / Low: {day.get('tempmin')}{self.unit}")
+        lines.append("-" * 40)
+        return "\n".join(lines)
+
     def get_forecast(self, request_dict: dict) -> str:
+        """Refactored main entry point using helper methods."""
         if not self._ensure_data_loaded():
             return "Error: Could not retrieve data."
 
@@ -38,39 +74,9 @@ class WeatherPresenter:
         location = self.reader.get_location()
 
         if scope == "today":
-            current = self.reader.get_current_conditions()
-            astro = self.reader.get_astronomy_today()
+            return self._format_today(location, request_dict.get("hours"))
 
-            lines = [
-                f"--- TODAY'S WEATHER: {location} ---",
-                f"Current Time: {current.get('datetime')}",
-                f"Conditions: {current.get('conditions')}",
-                f"Temperature: {current.get('temp')}{self.unit}",
-                f"Sunrise: {astro.get('sunrise')} | Sunset: {astro.get('sunset')}",
-                f"Moon Phase: {self._interpret_moon(astro.get('moonphase'))}"
-            ]
-
-            # If optional "hours" is provided, append the next X hours
-            hour_count = request_dict.get("hours")
-            if hour_count:
-                lines.append(f"\n--- NEXT {hour_count} HOURS ---")
-                hourly_data = self.reader.get_hourly_forecast()
-                # Find current hour index to start forecast from now
-                current_hour_str = current.get('datetime', '00:00:00')[:2]
-                start_idx = int(current_hour_str)
-
-                for h in hourly_data[start_idx + 1 : start_idx + 1 + int(hour_count)]:
-                    lines.append(f"{h.get('datetime')[:5]}: {h.get('temp')}{self.unit} - {h.get('conditions')}")
-
-            lines.append("-" * 40)
-            return "\n".join(lines)
-
-        elif scope == "week":
-            days = self.reader.get_forecast_days()
-            lines = [f"--- WEEK'S FORECAST: {location} ---"]
-            for day in days[1:8]:
-                lines.append(f"{day.get('datetime')}: {day.get('conditions'):20} | High: {day.get('tempmax')}{self.unit} / Low: {day.get('tempmin')}{self.unit}")
-            lines.append("-" * 40)
-            return "\n".join(lines)
+        if scope == "week":
+            return self._format_week(location)
 
         return "Error: Invalid forecast type."
